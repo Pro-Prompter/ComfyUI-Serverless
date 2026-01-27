@@ -1,172 +1,81 @@
-![ComfyUI Worker Banner](https://cpjrphpz3t5wbwfe.public.blob.vercel-storage.com/worker-comfyui_banner-CDZ6JIEByEePozCT1ZrmeVOsN5NX3U.jpeg)
+# Wan2.1 Remix Image-to-Video - Serverless Worker
+
+This repository contains the configuration to deploy the **Wan2.1 Remix Image-to-Video (I2V)** workflow as a Serverless Endpoint on **RunPod**, including all necessary custom nodes (WanVideoWrapper) and models.
+
+## Deployment Method: GitHub + Dockerfile
+
+We rely on RunPod's **Dockerfile** build system. The repository includes a `Dockerfile` that:
+1.  Extends the base ComfyUI image.
+2.  Installs the required Custom Nodes (`ComfyUI-WanVideoWrapper`, `comfyui-kjnodes`, etc.).
+3.  **Downloads all necessary models** (Wan2.2 Checkpoints, LoRAs, VAE, UMT5) directly into the image.
+
+### Steps to Deploy
+
+1.  **Push this repository to GitHub** (Private or Public).
+2.  Go to the [RunPod Console](https://www.runpod.io/console/serverless).
+3.  Click **New Endpoint**.
+4.  **Connect your GitHub Repository**.
+5.  **Build Method**: Select **Dockerfile**.
+6.  **GPU Configuration**: Select **H100 80GB** (Recommended for Wan2.1 14B).
+7.  **Environment Variables** (Optional, for tuning):
+    - `COMFY_POLLING_MAX_RETRIES`: `2000` (Increase wait time for cold starts)
+    - `COMFY_POLLING_INTERVAL_MS`: `500`
+8.  **Deploy**.
+    > **Note**: The first build/start will take significant time (10-15 minutes) as it downloads ~20GB of models into the container image.
 
 ---
 
-Run [ComfyUI](https://github.com/comfyanonymous/ComfyUI) workflows as a serverless endpoint.
+## API Usage
 
----
+The worker uses a custom `handler.py` that simplifies the input. You do **not** need to send the full workflow JSON every time.
 
-[![RunPod](https://api.runpod.io/badge/runpod-workers/worker-comfyui)](https://www.runpod.io/console/hub/runpod-workers/worker-comfyui)
+### Endpoint Input
 
----
+**POST** to your RunPod Serverless URL (e.g., `https://api.runpod.ai/v2/<endpoint_id>/run`)
 
-## What is included?
+**Headers**:
+- `Authorization`: `Bearer <YOUR_RUNPOD_KEY>`
 
-This worker comes with the **FLUX.1-dev-fp8** (`flux1-dev-fp8.safetensors`) model pre-installed and works only with this model when deployed from the hub. If you want to use a different model, you have to [deploy the endpoint](https://github.com/runpod-workers/worker-comfyui/blob/main/docs/deployment.md) using one of these pre-defined Docker images:
-
-- `runpod/worker-comfyui:<version>-base` - Clean ComfyUI install with no models
-- `runpod/worker-comfyui:<version>-flux1-schnell` - FLUX.1 schnell model
-- `runpod/worker-comfyui:<version>-flux1-dev` - FLUX.1 dev model
-- `runpod/worker-comfyui:<version>-sdxl` - Stable Diffusion XL model
-- `runpod/worker-comfyui:<version>-sd3` - Stable Diffusion 3 medium model
-
-Replace `<version>` with the latest release version from [GitHub Releases](https://github.com/runpod-workers/worker-comfyui/releases)
-
-If you need a different model or you have a LoRA or need custom nodes, then please follow our [Customization Guide](https://github.com/runpod-workers/worker-comfyui/blob/main/docs/customization.md) to create your own custom worker.
-
-## Usage
-
-The worker accepts the following input parameters:
-
-| Parameter  | Type     | Default | Required | Description                                                                                                                                                                                                                                    |
-| :--------- | :------- | :------ | :------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `workflow` | `object` | `None`  | **Yes**  | The entire ComfyUI workflow in the API JSON format. See the main project [README.md](https://github.com/runpod-workers/worker-comfyui#how-to-get-the-workflow-from-comfyui) for instructions on how to export this from the ComfyUI interface. |
-| `images`   | `array`  | `[]`    | No       | An optional array of input images. Each image object should contain `name` (string, required, filename to reference in the workflow) and `image` (string, required, base64-encoded image data).                                                |
-
-> [!NOTE]
-> The `input.images` array has specific size constraints based on RunPod API limits (10MB for `/run`, 20MB for `/runsync`). See the main [README.md](https://github.com/runpod-workers/worker-comfyui#inputimages) for details.
-
-### Example Request
-
-This example uses a simplified workflow (replace with your actual workflow JSON).
-
+**Body**:
 ```json
 {
   "input": {
-    "workflow": {
-      "6": {
-        "inputs": {
-          "text": "anime cat with massive fluffy fennec ears and a big fluffy tail blonde messy long hair blue eyes wearing a construction outfit placing a fancy black forest cake with candles on top of a dinner table of an old dark Victorian mansion lit by candlelight with a bright window to the foggy forest and very expensive stuff everywhere there are paintings on the walls",
-          "clip": ["30", 1]
-        },
-        "class_type": "CLIPTextEncode",
-        "_meta": {
-          "title": "CLIP Text Encode (Positive Prompt)"
-        }
-      },
-      "8": {
-        "inputs": {
-          "samples": ["31", 0],
-          "vae": ["30", 2]
-        },
-        "class_type": "VAEDecode",
-        "_meta": {
-          "title": "VAE Decode"
-        }
-      },
-      "9": {
-        "inputs": {
-          "filename_prefix": "ComfyUI",
-          "images": ["8", 0]
-        },
-        "class_type": "SaveImage",
-        "_meta": {
-          "title": "Save Image"
-        }
-      },
-      "27": {
-        "inputs": {
-          "width": 512,
-          "height": 512,
-          "batch_size": 1
-        },
-        "class_type": "EmptySD3LatentImage",
-        "_meta": {
-          "title": "EmptySD3LatentImage"
-        }
-      },
-      "30": {
-        "inputs": {
-          "ckpt_name": "flux1-dev-fp8.safetensors"
-        },
-        "class_type": "CheckpointLoaderSimple",
-        "_meta": {
-          "title": "Load Checkpoint"
-        }
-      },
-      "31": {
-        "inputs": {
-          "seed": 243057879077961,
-          "steps": 10,
-          "cfg": 1,
-          "sampler_name": "euler",
-          "scheduler": "simple",
-          "denoise": 1,
-          "model": ["30", 0],
-          "positive": ["35", 0],
-          "negative": ["33", 0],
-          "latent_image": ["27", 0]
-        },
-        "class_type": "KSampler",
-        "_meta": {
-          "title": "KSampler"
-        }
-      },
-      "33": {
-        "inputs": {
-          "text": "",
-          "clip": ["30", 1]
-        },
-        "class_type": "CLIPTextEncode",
-        "_meta": {
-          "title": "CLIP Text Encode (Negative Prompt)"
-        }
-      },
-      "35": {
-        "inputs": {
-          "guidance": 3.5,
-          "conditioning": ["6", 0]
-        },
-        "class_type": "FluxGuidance",
-        "_meta": {
-          "title": "FluxGuidance"
-        }
-      },
-      "38": {
-        "inputs": {
-          "images": ["8", 0]
-        },
-        "class_type": "PreviewImage",
-        "_meta": {
-          "title": "Preview Image"
-        }
-      },
-      "40": {
-        "inputs": {
-          "filename_prefix": "ComfyUI",
-          "images": ["8", 0]
-        },
-        "class_type": "SaveImage",
-        "_meta": {
-          "title": "Save Image"
-        }
-      }
-    }
+    "start_image_base64": "<BASE64_STRING_OF_START_IMAGE>",
+    "end_image_base64": "<BASE64_STRING_OF_END_IMAGE>",
+    "steps": 25,
+    "resolution": 720
   }
 }
 ```
 
-### Example Response
+### Parameters
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `start_image_base64` | String | **Required** | Base64 encoded string of the starting image (PNG/JPG). |
+| `end_image_base64` | String | **Required** | Base64 encoded string of the ending image (PNG/JPG). |
+| `steps` | Integer | `25` | Number of sampling steps. |
+| `resolution` | Integer | `720` | Vertical resolution of the output video. |
+
+### Response
+
+The response follows the standard RunPod Serverless format.
 
 ```json
 {
-  "delayTime": 2188,
-  "executionTime": 2297,
-  "id": "sync-c0cd1eb2-068f-4ecf-a99a-55770fc77391-e1",
-  "output": {
-    "message": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABAAAAAQACAIAAADwf7zU...",
-    "status": "success"
-  },
-  "status": "COMPLETED"
+  "id": "<JOB_ID>",
+  "status": "COMPLETED",
+  "output": "<BASE64_VIDEO_STRING>"
 }
 ```
+
+If the status is `IN_PROGRESS`, you must poll the status endpoint (`/status/<JOB_ID>`) until it completes.
+
+---
+
+## Local Development / Files
+
+- **`Dockerfile`**: Defines the build environment and model downloads.
+- **`handler.py`**: The Python script that processes requests, updates the workflow, and interacts with ComfyUI.
+- **`workflow_runpod.json`**: The base API-format workflow used as a template.
+- **`runpod.yaml`**: Configuration file linking the handler.
