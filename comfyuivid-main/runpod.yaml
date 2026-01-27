@@ -1,0 +1,11 @@
+version: '1.0'
+
+handler: handler.handler
+
+runtime:
+  python_version: '3.10'
+  requirements: requirements.txt
+
+env:
+  COMFY_HOST: 127.0.0.1:8188
+  WEBSOCKET_RECONNECT_ATTEMPTS: 5
