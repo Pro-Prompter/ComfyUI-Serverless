@@ -87,10 +87,15 @@ def generate_random_filename(extension=".png"):
 
 def handler(job):
     job_input = job.get("input")
-    if not job_input:
-        return {"error": "No input provided"}
+    # 1. Check Server (Always check server availability first)
+    if not check_server(f"http://{COMFY_HOST}/", COMFY_API_AVAILABLE_MAX_RETRIES, COMFY_API_AVAILABLE_INTERVAL_MS):
+        return {"error": "ComfyUI server unreachable."}
 
-    # 1. Parse Inputs (sanitize keys)
+    # 2. Handle Health Check (Empty Input)
+    if not job_input:
+        return {"status": "success", "message": "ComfyUI server is ready"}
+
+    # 3. Parse Inputs
     normalized_input = {k.strip(): v for k, v in job_input.items()}
     
     start_image_b64 = normalized_input.get("start_image_base64")
@@ -102,10 +107,6 @@ def handler(job):
         return {"error": "start_image_base64 is required."}
     if not end_image_b64:
         return {"error": "end_image_base64 is required."}
-
-    # 2. Check Server
-    if not check_server(f"http://{COMFY_HOST}/", COMFY_API_AVAILABLE_MAX_RETRIES, COMFY_API_AVAILABLE_INTERVAL_MS):
-        return {"error": "ComfyUI server unreachable."}
 
     # 3. Upload Images
     start_filename = generate_random_filename()
