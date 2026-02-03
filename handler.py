@@ -96,21 +96,17 @@ def generate_random_filename(extension=".png"):
 # -----------------------------
 
 def handler(job):
+    # 1. Robust Health Check (Prevents deployment failures due to empty test jobs)
+    # If job is None, missing "input", or has an empty input, check if server is up and return status.
+    if not job or "input" not in job or not job.get("input"):
+        if check_server(f"http://{COMFY_HOST}/", COMFY_API_AVAILABLE_MAX_RETRIES, COMFY_API_AVAILABLE_INTERVAL_MS):
+            return {"status": "success", "message": "ComfyUI server is ready (test/health-check request)"}
+        else:
+            return {"error": "ComfyUI server failed to start within the timeout period."}
+
     job_input = job.get("input")
-
-    # -----------------------------
-    # 1. Health Check
-    # -----------------------------
-    if not check_server(f"http://{COMFY_HOST}/", COMFY_API_AVAILABLE_MAX_RETRIES, COMFY_API_AVAILABLE_INTERVAL_MS):
-        return {"error": "ComfyUI server unreachable."}
-
-    # Empty input = basic health check
-    if not job_input:
-        return {"status": "success", "message": "ComfyUI server is ready"}
-
-    # -----------------------------
+    
     # 2. Parse Inputs
-    # -----------------------------
     normalized_input = {k.strip(): v for k, v in job_input.items()}
     start_image_b64 = normalized_input.get("start_image_base64")
     end_image_b64 = normalized_input.get("end_image_base64")
