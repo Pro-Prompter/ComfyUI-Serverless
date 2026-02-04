@@ -97,7 +97,6 @@ def generate_random_filename(extension=".png"):
 
 def handler(job):
     # 1. Robust Health Check (Prevents deployment failures due to empty test jobs)
-    # If job is None, missing "input", or has an empty input, check if server is up and return status.
     if not job or "input" not in job or not job.get("input"):
         if check_server(f"http://{COMFY_HOST}/", COMFY_API_AVAILABLE_MAX_RETRIES, COMFY_API_AVAILABLE_INTERVAL_MS):
             return {"status": "success", "message": "ComfyUI server is ready (test/health-check request)"}
@@ -106,23 +105,31 @@ def handler(job):
 
     job_input = job.get("input")
     
-    # 2. Parse Inputs
+    # 2. Parse and Validate Inputs
     normalized_input = {k.strip(): v for k, v in job_input.items()}
+    
     start_image_b64 = normalized_input.get("start_image_base64")
     end_image_b64 = normalized_input.get("end_image_base64")
-    steps = normalized_input.get("steps", 25)
-    resolution = normalized_input.get("resolution", 720)
+    
+    # Duration / Multiplier logic
+    try:
+        duration = int(normalized_input.get("duration_seconds", 8))
+    except ValueError:
+        duration = 8
+        
+    # Clamp duration to 4-15 defaults
+    multiplier = max(4, min(15, duration))
+    
+    model_name = normalized_input.get("model", "rife47.pth")
 
-    # Test request without images
     if not start_image_b64 or not end_image_b64:
-        return {
-            "status": "success",
-            "message": "ComfyUI server is ready (no images provided in test request)"
-        }
+        return {"error": "start_image_base64 and end_image_base64 are required."}
 
-    # -----------------------------
-    # 3. Upload Images
-    # -----------------------------
+    # 3. Check Server (Redundant but safe)
+    if not check_server(f"http://{COMFY_HOST}/", COMFY_API_AVAILABLE_MAX_RETRIES, COMFY_API_AVAILABLE_INTERVAL_MS):
+        return {"error": "ComfyUI server unreachable."}
+
+    # 4. Upload Images
     start_filename = generate_random_filename()
     end_filename = generate_random_filename()
 
@@ -131,42 +138,44 @@ def handler(job):
     if not upload_base64_image(end_image_b64, end_filename):
         return {"error": "Failed to upload end image"}
 
-    # -----------------------------
-    # 4. Load Workflow
-    # -----------------------------
+    # 5. Load Workflow
     try:
         with open(WORKFLOW_FILE, 'r') as f:
-            json_data = json.load(f)
-            workflow = json_data.get("input", {}).get("workflow", json_data)
+            workflow = json.load(f)
     except Exception as e:
         return {"error": f"Failed to load workflow file: {e}"}
 
-    # -----------------------------
-    # 5. Modify Workflow
-    # -----------------------------
-    if "147" in workflow:
-        workflow["147"]["inputs"]["int"] = resolution
-    if "150" in workflow:
-        workflow["150"]["inputs"]["value"] = steps
-    if "148" in workflow:
-        workflow["148"]["inputs"]["image"] = start_filename
+    # 6. Modify Workflow
+    # Node 3: Start Image
+    if "3" in workflow:
+        workflow["3"]["inputs"]["image"] = start_filename
     else:
-        return {"error": "Start Image Node (148) not found"}
+        return {"error": "Node 3 (Start Image) not found in workflow"}
 
-    # Inject End Image Node
-    end_node_id = "9001"
-    workflow[end_node_id] = {
-        "inputs": {"image": end_filename, "upload": "image"},
-        "class_type": "LoadImage"
-    }
-    if "156" in workflow:
-        workflow["156"]["inputs"]["end_image"] = [end_node_id, 0]
+    # Node 4: End Image
+    if "4" in workflow:
+        workflow["4"]["inputs"]["image"] = end_filename
     else:
-        return {"error": "WanVideoImageToVideoEncode Node (156) not found"}
+        return {"error": "Node 4 (End Image) not found in workflow"}
+        
+    # Node 5: RIFE VFI
+    if "5" in workflow:
+        workflow["5"]["inputs"]["multiplier"] = multiplier
+        workflow["5"]["inputs"]["ckpt_name"] = model_name
+        # Ensure connections are correct (frames from 3, frames2 from 4)
+        workflow["5"]["inputs"]["frames"] = ["3", 0]
+        workflow["5"]["inputs"]["frames2"] = ["4", 0]
+    else:
+        return {"error": "Node 5 (RIFE VFI) not found in workflow"}
 
-    # -----------------------------
-    # 6. Execute Workflow
-    # -----------------------------
+    # Node 6: VHS Video Combine (output)
+    if "6" in workflow:
+        workflow["6"]["inputs"]["frame_rate"] = 30
+        workflow["6"]["inputs"]["format"] = "image/webp"
+    else:
+        return {"error": "Node 6 (VHS Video Combine) not found in workflow"}
+
+    # 7. Execute Workflow
     client_id = str(uuid.uuid4())
     ws = None
     try:
@@ -177,7 +186,7 @@ def handler(job):
         queue_resp = queue_workflow(workflow, client_id)
         prompt_id = queue_resp["prompt_id"]
 
-        # Poll until workflow completes
+        # Poll
         while True:
             out = ws.recv()
             if isinstance(out, str):
@@ -185,26 +194,47 @@ def handler(job):
                 if msg["type"] == "executing":
                     data = msg["data"]
                     if data["node"] is None and data["prompt_id"] == prompt_id:
-                        break
+                        break # Done
+            else:
+                continue
 
-        # Fetch Results
+        # 8. Fetch Results
         history = get_history(prompt_id)
         prompt_history = history.get(prompt_id, {})
         outputs = prompt_history.get("outputs", {})
 
-        results = []
-        for nid, output in outputs.items():
-            for key in ["images", "gifs", "video"]:
-                if key in output:
-                    for img in output[key]:
-                        content = get_image_data(img["filename"], img["subfolder"], img["type"])
-                        if content:
-                            results.append(base64.b64encode(content).decode("utf-8"))
+        # Extract WebP from Node 6
+        output_data = None
+        
+        # VHS Combine outputs to 'gifs' usually, but safe to check all
+        node_output = outputs.get("6", {})
+        
+        for key in ["gifs", "images", "video"]:
+             if key in node_output:
+                 for item in node_output[key]:
+                     fname = item["filename"]
+                     ftype = item["type"]
+                     subfolder = item["subfolder"]
+                     
+                     content = get_image_data(fname, subfolder, ftype)
+                     if content:
+                         output_data = base64.b64encode(content).decode("utf-8")
+                         break
+             if output_data: 
+                 break
 
-        if not results:
-            return {"error": "No output generated", "details": str(outputs)}
+        if not output_data:
+             return {"error": "No output video generated", "details": str(outputs)}
 
-        return {"output": results[0]}
+        return {
+            "output": output_data,
+            "metadata": {
+                "format": "webp",
+                "duration_seconds": float(multiplier), # Approx
+                "frame_rate": 30,
+                "interpolation_model": model_name
+            }
+        }
 
     except Exception as e:
         return {"error": f"Execution failed: {e}", "traceback": traceback.format_exc()}
