@@ -1,15 +1,15 @@
 {
-  "title": "ComfyUI",
-  "description": "Generate images with ComfyUI using FLUX.1-dev (fp8)",
+  "title": "Wan2.2 I2V Remix",
+  "description": "Generate AI-guided video interpolation between two images using Wan2.2 I2V Remix with text prompts",
   "type": "serverless",
-  "category": "image",
+  "category": "video",
   "iconUrl": "https://cpjrphpz3t5wbwfe.public.blob.vercel-storage.com/comfyui-logo-zpFUpCZoYMn5L0Ea9hfYOKX6F9gYqx.png",
   "config": {
     "runsOn": "GPU",
-    "containerDiskInGb": 20,
-    "gpuIds": "ADA_24",
+    "containerDiskInGb": 50,
+    "gpuIds": "H100_80GB,H200,ADA_24",
     "gpuCount": 1,
-    "allowedCudaVersions": ["12.7", "12.6"],
+    "allowedCudaVersions": ["12.7", "12.6", "12.4"],
     "env": [
       {
         "key": "REFRESH_WORKER",
@@ -18,6 +18,24 @@
           "type": "boolean",
           "description": "When enabled, the worker will stop after each finished job to have a clean state",
           "default": false
+        }
+      },
+      {
+        "key": "COMFY_POLLING_MAX_RETRIES",
+        "input": {
+          "name": "Polling Max Retries",
+          "type": "number",
+          "description": "Maximum retries for ComfyUI server availability",
+          "default": 2000
+        }
+      },
+      {
+        "key": "COMFY_POLLING_INTERVAL_MS",
+        "input": {
+          "name": "Polling Interval (ms)",
+          "type": "number",
+          "description": "Interval between polling attempts in milliseconds",
+          "default": 500
         }
       }
     ]

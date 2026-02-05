@@ -1,8 +1,12 @@
 {
   "input": {
-    "start_image_base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
-    "end_image_base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
-    "steps": 25,
-    "resolution": 480
+    "start_image_base64": "<BASE64_ENCODED_START_IMAGE>",
+    "end_image_base64": "<BASE64_ENCODED_END_IMAGE>",
+    "positive_prompt": "smooth motion, high quality, detailed, cinematic, natural movement",
+    "negative_prompt": "low quality, lowres, bad hands, extra limbs, missing fingers, poorly drawn face, bad anatomy, blurred, jpeg artifacts, deformed, ugly, bad proportions, disfigured, watermark, text, logo, signature",
+    "steps": 8,
+    "resolution": 720,
+    "frame_length": 65,
+    "seed": 0
   }
 }

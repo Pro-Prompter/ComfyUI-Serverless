@@ -104,28 +104,53 @@ def handler(job):
             return {"error": "ComfyUI server failed to start within the timeout period."}
 
     job_input = job.get("input")
-    
+
     # 2. Parse and Validate Inputs
     normalized_input = {k.strip(): v for k, v in job_input.items()}
-    
+
+    # Required: Start and end images (base64 encoded)
     start_image_b64 = normalized_input.get("start_image_base64")
     end_image_b64 = normalized_input.get("end_image_base64")
-    
-    # Duration / Multiplier logic
-    try:
-        duration = int(normalized_input.get("duration_seconds", 8))
-    except ValueError:
-        duration = 8
-        
-    # Clamp duration to 4-15 defaults
-    multiplier = max(4, min(15, duration))
-    
-    model_name = normalized_input.get("model", "rife47.pth")
 
+    # Optional: Prompts for AI-guided video generation
+    positive_prompt = normalized_input.get("positive_prompt", "")
+    negative_prompt = normalized_input.get("negative_prompt",
+        "low quality, lowres, bad hands, extra limbs, missing fingers, poorly drawn face, bad anatomy, blurred, jpeg artifacts, deformed, ugly, bad proportions, disfigured, watermark, text, logo, signature")
+
+    # Optional: Steps (default 8, range 4-20)
+    try:
+        steps = int(normalized_input.get("steps", 8))
+    except (ValueError, TypeError):
+        steps = 8
+    steps = max(4, min(20, steps))
+
+    # Optional: Resolution (default 720)
+    try:
+        resolution = int(normalized_input.get("resolution", 720))
+    except (ValueError, TypeError):
+        resolution = 720
+    resolution = max(480, min(1080, resolution))
+
+    # Optional: Frame length (default 65, range 17-129)
+    try:
+        frame_length = int(normalized_input.get("frame_length", 65))
+    except (ValueError, TypeError):
+        frame_length = 65
+    frame_length = max(17, min(129, frame_length))
+
+    # Optional: Random seed (0 = random)
+    try:
+        seed = int(normalized_input.get("seed", 0))
+    except (ValueError, TypeError):
+        seed = 0
+    if seed == 0:
+        seed = random.randint(0, 2**32 - 1)
+
+    # Validate required inputs
     if not start_image_b64 or not end_image_b64:
         return {"error": "start_image_base64 and end_image_base64 are required."}
 
-    # 3. Check Server (Redundant but safe)
+    # 3. Check Server
     if not check_server(f"http://{COMFY_HOST}/", COMFY_API_AVAILABLE_MAX_RETRIES, COMFY_API_AVAILABLE_INTERVAL_MS):
         return {"error": "ComfyUI server unreachable."}
 
@@ -141,39 +166,78 @@ def handler(job):
     # 5. Load Workflow
     try:
         with open(WORKFLOW_FILE, 'r') as f:
-            workflow = json.load(f)
+            workflow_data = json.load(f)
+        # Extract workflow from input.workflow structure (matches wan_api_postman.json format)
+        workflow = workflow_data.get("input", {}).get("workflow", workflow_data)
     except Exception as e:
         return {"error": f"Failed to load workflow file: {e}"}
 
-    # 6. Modify Workflow
-    # Node 3: Start Image
-    if "3" in workflow:
-        workflow["3"]["inputs"]["image"] = start_filename
-    else:
-        return {"error": "Node 3 (Start Image) not found in workflow"}
+    # 6. Modify Workflow Nodes
 
-    # Node 4: End Image
-    if "4" in workflow:
-        workflow["4"]["inputs"]["image"] = end_filename
+    # Node 148: Start Image
+    if "148" in workflow:
+        workflow["148"]["inputs"]["image"] = start_filename
     else:
-        return {"error": "Node 4 (End Image) not found in workflow"}
-        
-    # Node 5: RIFE VFI
-    if "5" in workflow:
-        workflow["5"]["inputs"]["multiplier"] = multiplier
-        workflow["5"]["inputs"]["ckpt_name"] = model_name
-        # Ensure connections are correct (frames from 3, frames2 from 4)
-        workflow["5"]["inputs"]["frames"] = ["3", 0]
-        workflow["5"]["inputs"]["frames2"] = ["4", 0]
-    else:
-        return {"error": "Node 5 (RIFE VFI) not found in workflow"}
+        return {"error": "Node 148 (Start Image) not found in workflow"}
 
-    # Node 6: VHS Video Combine (output)
-    if "6" in workflow:
-        workflow["6"]["inputs"]["frame_rate"] = 30
-        workflow["6"]["inputs"]["format"] = "image/webp"
+    # Node 149: End Image
+    if "149" in workflow:
+        workflow["149"]["inputs"]["image"] = end_filename
     else:
-        return {"error": "Node 6 (VHS Video Combine) not found in workflow"}
+        return {"error": "Node 149 (End Image) not found in workflow"}
+
+    # Node 134: Positive Prompt
+    if "134" in workflow:
+        workflow["134"]["inputs"]["text"] = positive_prompt
+    else:
+        return {"error": "Node 134 (Positive Prompt) not found in workflow"}
+
+    # Node 137: Negative Prompt
+    if "137" in workflow:
+        workflow["137"]["inputs"]["text"] = negative_prompt
+    else:
+        return {"error": "Node 137 (Negative Prompt) not found in workflow"}
+
+    # Node 150: Steps
+    if "150" in workflow:
+        workflow["150"]["inputs"]["value"] = steps
+    else:
+        return {"error": "Node 150 (Steps) not found in workflow"}
+
+    # Node 151: Split Step (half of total steps)
+    split_step = steps // 2
+    if "151" in workflow:
+        workflow["151"]["inputs"]["value"] = split_step
+    else:
+        return {"error": "Node 151 (Split Step) not found in workflow"}
+
+    # Node 147: Resolution
+    if "147" in workflow:
+        workflow["147"]["inputs"]["value"] = resolution
+    else:
+        return {"error": "Node 147 (Resolution) not found in workflow"}
+
+    # Node 156: WanVideoImageToVideoEncode (frame length)
+    if "156" in workflow:
+        workflow["156"]["inputs"]["length"] = frame_length
+    else:
+        return {"error": "Node 156 (WanVideoImageToVideoEncode) not found in workflow"}
+
+    # Node 139: WanVideoSampler HIGH (steps, seed, end_step)
+    if "139" in workflow:
+        workflow["139"]["inputs"]["steps"] = steps
+        workflow["139"]["inputs"]["seed"] = seed
+        workflow["139"]["inputs"]["end_step"] = split_step
+    else:
+        return {"error": "Node 139 (WanVideoSampler HIGH) not found in workflow"}
+
+    # Node 140: WanVideoSampler LOW (steps, seed, start_step)
+    if "140" in workflow:
+        workflow["140"]["inputs"]["steps"] = steps
+        workflow["140"]["inputs"]["seed"] = seed
+        workflow["140"]["inputs"]["start_step"] = split_step
+    else:
+        return {"error": "Node 140 (WanVideoSampler LOW) not found in workflow"}
 
     # 7. Execute Workflow
     client_id = str(uuid.uuid4())
@@ -186,7 +250,7 @@ def handler(job):
         queue_resp = queue_workflow(workflow, client_id)
         prompt_id = queue_resp["prompt_id"]
 
-        # Poll
+        # Poll for completion
         while True:
             out = ws.recv()
             if isinstance(out, str):
@@ -194,7 +258,7 @@ def handler(job):
                 if msg["type"] == "executing":
                     data = msg["data"]
                     if data["node"] is None and data["prompt_id"] == prompt_id:
-                        break # Done
+                        break  # Done
             else:
                 continue
 
@@ -203,36 +267,37 @@ def handler(job):
         prompt_history = history.get(prompt_id, {})
         outputs = prompt_history.get("outputs", {})
 
-        # Extract WebP from Node 6
+        # Extract video from Node 117 (SaveVideo)
         output_data = None
-        
-        # VHS Combine outputs to 'gifs' usually, but safe to check all
-        node_output = outputs.get("6", {})
-        
-        for key in ["gifs", "images", "video"]:
-             if key in node_output:
-                 for item in node_output[key]:
-                     fname = item["filename"]
-                     ftype = item["type"]
-                     subfolder = item["subfolder"]
-                     
-                     content = get_image_data(fname, subfolder, ftype)
-                     if content:
-                         output_data = base64.b64encode(content).decode("utf-8")
-                         break
-             if output_data: 
-                 break
+        node_output = outputs.get("117", {})
+
+        for key in ["video", "videos", "gifs", "images"]:
+            if key in node_output:
+                for item in node_output[key]:
+                    fname = item.get("filename", "")
+                    ftype = item.get("type", "output")
+                    subfolder = item.get("subfolder", "")
+
+                    content = get_image_data(fname, subfolder, ftype)
+                    if content:
+                        output_data = base64.b64encode(content).decode("utf-8")
+                        break
+            if output_data:
+                break
 
         if not output_data:
-             return {"error": "No output video generated", "details": str(outputs)}
+            return {"error": "No output video generated", "details": str(outputs)}
 
         return {
             "output": output_data,
             "metadata": {
-                "format": "webp",
-                "duration_seconds": float(multiplier), # Approx
-                "frame_rate": 30,
-                "interpolation_model": model_name
+                "format": "mp4",
+                "steps": steps,
+                "resolution": resolution,
+                "frame_length": frame_length,
+                "seed": seed,
+                "positive_prompt": positive_prompt[:100] + "..." if len(positive_prompt) > 100 else positive_prompt,
+                "negative_prompt": negative_prompt[:100] + "..." if len(negative_prompt) > 100 else negative_prompt
             }
         }
 

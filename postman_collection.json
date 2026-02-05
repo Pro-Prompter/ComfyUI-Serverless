@@ -1,0 +1,192 @@
+{
+  "info": {
+    "_postman_id": "wan22-i2v-remix-api",
+    "name": "Wan2.2 I2V Remix API",
+    "description": "RunPod Serverless API for Wan2.2 I2V Remix - AI-guided video interpolation between two images with text prompts",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{RUNPOD_API_KEY}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"input\": {}\n}"
+        },
+        "url": {
+          "raw": "https://api.runpod.ai/v2/{{ENDPOINT_ID}}/runsync",
+          "protocol": "https",
+          "host": ["api", "runpod", "ai"],
+          "path": ["v2", "{{ENDPOINT_ID}}", "runsync"]
+        },
+        "description": "Health check endpoint - returns server status without processing any job"
+      },
+      "response": []
+    },
+    {
+      "name": "Generate Video (Sync)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{RUNPOD_API_KEY}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"input\": {\n    \"start_image_base64\": \"{{START_IMAGE_B64}}\",\n    \"end_image_base64\": \"{{END_IMAGE_B64}}\",\n    \"positive_prompt\": \"smooth motion, high quality, detailed, cinematic, natural movement\",\n    \"negative_prompt\": \"low quality, lowres, bad hands, extra limbs, missing fingers, poorly drawn face, bad anatomy, blurred, jpeg artifacts, deformed, ugly, bad proportions, disfigured, watermark, text, logo, signature\",\n    \"steps\": 8,\n    \"resolution\": 720,\n    \"frame_length\": 65,\n    \"seed\": 0\n  }\n}"
+        },
+        "url": {
+          "raw": "https://api.runpod.ai/v2/{{ENDPOINT_ID}}/runsync",
+          "protocol": "https",
+          "host": ["api", "runpod", "ai"],
+          "path": ["v2", "{{ENDPOINT_ID}}", "runsync"]
+        },
+        "description": "Generate video synchronously - waits for completion and returns result"
+      },
+      "response": []
+    },
+    {
+      "name": "Generate Video (Async)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{RUNPOD_API_KEY}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"input\": {\n    \"start_image_base64\": \"{{START_IMAGE_B64}}\",\n    \"end_image_base64\": \"{{END_IMAGE_B64}}\",\n    \"positive_prompt\": \"smooth motion, high quality, detailed, cinematic, natural movement\",\n    \"negative_prompt\": \"low quality, lowres, bad hands, extra limbs, missing fingers, poorly drawn face, bad anatomy, blurred, jpeg artifacts, deformed, ugly, bad proportions, disfigured, watermark, text, logo, signature\",\n    \"steps\": 8,\n    \"resolution\": 720,\n    \"frame_length\": 65,\n    \"seed\": 0\n  }\n}"
+        },
+        "url": {
+          "raw": "https://api.runpod.ai/v2/{{ENDPOINT_ID}}/run",
+          "protocol": "https",
+          "host": ["api", "runpod", "ai"],
+          "path": ["v2", "{{ENDPOINT_ID}}", "run"]
+        },
+        "description": "Start video generation asynchronously - returns job ID immediately"
+      },
+      "response": []
+    },
+    {
+      "name": "Check Job Status",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{RUNPOD_API_KEY}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "https://api.runpod.ai/v2/{{ENDPOINT_ID}}/status/{{JOB_ID}}",
+          "protocol": "https",
+          "host": ["api", "runpod", "ai"],
+          "path": ["v2", "{{ENDPOINT_ID}}", "status", "{{JOB_ID}}"]
+        },
+        "description": "Check the status of an async job by its ID"
+      },
+      "response": []
+    },
+    {
+      "name": "Cancel Job",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{RUNPOD_API_KEY}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "https://api.runpod.ai/v2/{{ENDPOINT_ID}}/cancel/{{JOB_ID}}",
+          "protocol": "https",
+          "host": ["api", "runpod", "ai"],
+          "path": ["v2", "{{ENDPOINT_ID}}", "cancel", "{{JOB_ID}}"]
+        },
+        "description": "Cancel a running or queued job"
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "RUNPOD_API_KEY",
+      "value": "",
+      "type": "string",
+      "description": "Your RunPod API key (get from RunPod dashboard)"
+    },
+    {
+      "key": "ENDPOINT_ID",
+      "value": "",
+      "type": "string",
+      "description": "Your serverless endpoint ID (e.g., mi9rxwoaz232lv)"
+    },
+    {
+      "key": "JOB_ID",
+      "value": "",
+      "type": "string",
+      "description": "Job ID returned from async /run endpoint"
+    },
+    {
+      "key": "START_IMAGE_B64",
+      "value": "",
+      "type": "string",
+      "description": "Base64 encoded start image"
+    },
+    {
+      "key": "END_IMAGE_B64",
+      "value": "",
+      "type": "string",
+      "description": "Base64 encoded end image"
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "exec": [""]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "exec": [""]
+      }
+    }
+  ]
+}
