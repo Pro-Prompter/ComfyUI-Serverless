@@ -65,9 +65,18 @@
           "attention_mode": "offload_device",
           "attention_implementation": "sageattn",
           "save_load_dtype": "default",
-          "compile_args": ["127", 0],
-          "block_swap_args": ["128", 0],
-          "lora": ["130", 0]
+          "compile_args": [
+            "127",
+            0
+          ],
+          "block_swap_args": [
+            "128",
+            0
+          ],
+          "lora": [
+            "130",
+            0
+          ]
         },
         "class_type": "WanVideoModelLoader",
         "_meta": {
@@ -82,9 +91,18 @@
           "attention_mode": "offload_device",
           "attention_implementation": "sageattn",
           "save_load_dtype": "default",
-          "compile_args": ["127", 0],
-          "block_swap_args": ["128", 0],
-          "lora": ["129", 0]
+          "compile_args": [
+            "127",
+            0
+          ],
+          "block_swap_args": [
+            "128",
+            0
+          ],
+          "lora": [
+            "129",
+            0
+          ]
         },
         "class_type": "WanVideoModelLoader",
         "_meta": {
@@ -105,7 +123,10 @@
       "134": {
         "inputs": {
           "text": "",
-          "clip": ["133", 0]
+          "clip": [
+            "133",
+            0
+          ]
         },
         "class_type": "CLIPTextEncode",
         "_meta": {
@@ -115,7 +136,10 @@
       "137": {
         "inputs": {
           "text": "low quality, lowres, bad hands, extra limbs, missing fingers, poorly drawn face, bad anatomy, blurred, jpeg artifacts, deformed, ugly, bad proportions, disfigured, watermark, text, logo, signature, unrealistic eyes, cross-eyed, lopsided, bad lighting, harsh shadows, flat shading, unshapely body, pixelated, duplicate limbs, bad perspective, morphed, distorted, glitch, malformed hands, distorted fingers, noisy background, overly saturated, unnatural colors, lens distortion, grainy, low detail,",
-          "clip": ["133", 0]
+          "clip": [
+            "133",
+            0
+          ]
         },
         "class_type": "CLIPTextEncode",
         "_meta": {
@@ -124,8 +148,14 @@
       },
       "138": {
         "inputs": {
-          "positive": ["134", 0],
-          "negative": ["137", 0]
+          "positive": [
+            "134",
+            0
+          ],
+          "negative": [
+            "137",
+            0
+          ]
         },
         "class_type": "WanVideoTextEmbedBridge",
         "_meta": {
@@ -147,9 +177,18 @@
           "shift": 0,
           "max_shift": 2,
           "reverse_ode": true,
-          "model": ["131", 0],
-          "image_embeds": ["156", 0],
-          "text_embeds": ["138", 0]
+          "model": [
+            "131",
+            0
+          ],
+          "image_embeds": [
+            "156",
+            0
+          ],
+          "text_embeds": [
+            "138",
+            0
+          ]
         },
         "class_type": "WanVideoSampler",
         "_meta": {
@@ -171,10 +210,22 @@
           "shift": 2,
           "max_shift": 10000,
           "reverse_ode": false,
-          "model": ["132", 0],
-          "image_embeds": ["156", 0],
-          "text_embeds": ["138", 0],
-          "samples": ["139", 0]
+          "model": [
+            "132",
+            0
+          ],
+          "image_embeds": [
+            "156",
+            0
+          ],
+          "text_embeds": [
+            "138",
+            0
+          ],
+          "samples": [
+            "139",
+            0
+          ]
         },
         "class_type": "WanVideoSampler",
         "_meta": {
@@ -239,9 +290,18 @@
           "resize": true,
           "invert_start": false,
           "invert_end": false,
-          "vae": ["157", 0],
-          "start_image": ["148", 0],
-          "end_image": ["149", 0]
+          "vae": [
+            "157",
+            0
+          ],
+          "start_image": [
+            "148",
+            0
+          ],
+          "end_image": [
+            "149",
+            0
+          ]
         },
         "class_type": "WanVideoImageToVideoEncode",
         "_meta": {
@@ -266,8 +326,14 @@
           "tile_overlap_factor_height": 144,
           "tile_overlap_factor_width": 128,
           "tiling_mode": "default",
-          "vae": ["157", 0],
-          "samples": ["140", 0]
+          "vae": [
+            "157",
+            0
+          ],
+          "samples": [
+            "140",
+            0
+          ]
         },
         "class_type": "WanVideoDecode",
         "_meta": {
@@ -282,7 +348,10 @@
           "fast_mode": true,
           "ensemble": true,
           "scale_factor": 1,
-          "frames": ["158", 0]
+          "frames": [
+            "158",
+            0
+          ]
         },
         "class_type": "RIFE VFI",
         "_meta": {
@@ -292,7 +361,10 @@
       "116": {
         "inputs": {
           "fps": 32,
-          "images": ["115", 0]
+          "images": [
+            "115",
+            0
+          ]
         },
         "class_type": "CreateVideo",
         "_meta": {
@@ -301,14 +373,15 @@
       },
       "117": {
         "inputs": {
-          "filename_prefix": "video/ComfyUI",
-          "format": "auto",
-          "codec": "h264",
-          "video": ["116", 0]
+          "filename_prefix": "interpolated_frames",
+          "images": [
+            "115",
+            0
+          ]
         },
-        "class_type": "SaveVideo",
+        "class_type": "SaveImage",
         "_meta": {
-          "title": "SaveVideo"
+          "title": "Save Interpolated Frames"
         }
       }
     }

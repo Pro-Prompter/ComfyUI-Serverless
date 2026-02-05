@@ -262,36 +262,33 @@ def handler(job):
             else:
                 continue
 
-        # 8. Fetch Results
+        # 8. Fetch Results - Extract all interpolated frames
         history = get_history(prompt_id)
         prompt_history = history.get(prompt_id, {})
         outputs = prompt_history.get("outputs", {})
 
-        # Extract video from Node 117 (SaveVideo)
-        output_data = None
+        # Extract frames from SaveImage node 117
+        frames = []
         node_output = outputs.get("117", {})
+        
+        if "images" in node_output:
+            for item in node_output["images"]:
+                fname = item.get("filename", "")
+                ftype = item.get("type", "output")
+                subfolder = item.get("subfolder", "")
+                
+                content = get_image_data(fname, subfolder, ftype)
+                if content:
+                    frames.append(base64.b64encode(content).decode("utf-8"))
 
-        for key in ["video", "videos", "gifs", "images"]:
-            if key in node_output:
-                for item in node_output[key]:
-                    fname = item.get("filename", "")
-                    ftype = item.get("type", "output")
-                    subfolder = item.get("subfolder", "")
-
-                    content = get_image_data(fname, subfolder, ftype)
-                    if content:
-                        output_data = base64.b64encode(content).decode("utf-8")
-                        break
-            if output_data:
-                break
-
-        if not output_data:
-            return {"error": "No output video generated", "details": str(outputs)}
+        if not frames:
+            return {"error": "No interpolated frames generated", "details": str(outputs)}
 
         return {
-            "output": output_data,
+            "frames": frames,
             "metadata": {
-                "format": "mp4",
+                "format": "png",
+                "frame_count": len(frames),
                 "steps": steps,
                 "resolution": resolution,
                 "frame_length": frame_length,

@@ -1,11 +1,11 @@
 {
   "input": {
-    "start_image_base64": "<BASE64_ENCODED_START_IMAGE>",
-    "end_image_base64": "<BASE64_ENCODED_END_IMAGE>",
-    "positive_prompt": "smooth motion, high quality, detailed, cinematic, natural movement",
-    "negative_prompt": "low quality, lowres, bad hands, extra limbs, missing fingers, poorly drawn face, bad anatomy, blurred, jpeg artifacts, deformed, ugly, bad proportions, disfigured, watermark, text, logo, signature",
+    "start_image_base64": "<BASE64_START_IMAGE>",
+    "end_image_base64": "<BASE64_END_IMAGE>",
+    "positive_prompt": "smooth motion, high quality, cinematic",
+    "negative_prompt": "static, blurry, low quality, distorted",
     "steps": 8,
-    "resolution": 720,
+    "resolution": 640,
     "frame_length": 65,
     "seed": 0
   }
