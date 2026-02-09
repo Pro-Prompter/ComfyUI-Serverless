@@ -8,6 +8,7 @@
           "mode": "default",
           "dynamic": false,
           "dynamo_cache_size_limit": 64,
+          "compile_transformer_blocks_only": true,
           "compile_single_blocks": true,
           "compile_double_blocks_limit": 128,
           "compile_extras": false,
@@ -22,6 +23,7 @@
         "inputs": {
           "blocks_to_swap": 20,
           "offload_txt_in": false,
+          "offload_txt_emb": false,
           "offload_img_in": false,
           "offload_img_emb": false,
           "offload_extra_blocks": 0,
@@ -61,8 +63,11 @@
         "inputs": {
           "model": "Wan2.2_Remix_NSFW_i2v_14b_high_lighting_v2.0.safetensors",
           "precision": "fp16_fast",
+          "base_precision": "fp16",
+          "load_device": "gpu",
+          "quantization": "disabled",
           "compile_model": "disabled",
-          "attention_mode": "offload_device",
+          "attention_mode": "sageattn",
           "attention_implementation": "sageattn",
           "save_load_dtype": "default",
           "compile_args": [
@@ -87,8 +92,11 @@
         "inputs": {
           "model": "Wan2.2_Remix_NSFW_i2v_14b_low_lighting_v2.0.safetensors",
           "precision": "fp16_fast",
+          "base_precision": "fp16",
+          "load_device": "gpu",
+          "quantization": "disabled",
           "compile_model": "disabled",
-          "attention_mode": "offload_device",
+          "attention_mode": "sageattn",
           "attention_implementation": "sageattn",
           "save_load_dtype": "default",
           "compile_args": [
@@ -170,6 +178,7 @@
           "seed_mode": "randomize",
           "add_latent_noise": true,
           "sampler": "euler",
+          "scheduler": "simple",
           "start_step": 0,
           "end_step": 4,
           "skip_uncond": false,
@@ -177,6 +186,8 @@
           "shift": 0,
           "max_shift": 2,
           "reverse_ode": true,
+          "force_offload": false,
+          "riflex_freq_index": 0,
           "model": [
             "131",
             0
@@ -203,6 +214,7 @@
           "seed_mode": "fixed",
           "add_latent_noise": true,
           "sampler": "euler",
+          "scheduler": "simple",
           "start_step": 4,
           "end_step": 10000,
           "skip_uncond": false,
@@ -210,6 +222,8 @@
           "shift": 2,
           "max_shift": 10000,
           "reverse_ode": false,
+          "force_offload": false,
+          "riflex_freq_index": 0,
           "model": [
             "132",
             0
@@ -283,13 +297,18 @@
         "inputs": {
           "width": 832,
           "height": 480,
+          "num_frames": 65,
           "length": 65,
           "start_weight": 0,
           "end_weight": 1,
+          "start_latent_strength": 1.0,
+          "end_latent_strength": 1.0,
+          "noise_aug_strength": 0.0,
           "guidance_scale": 1,
           "resize": true,
           "invert_start": false,
           "invert_end": false,
+          "force_offload": false,
           "vae": [
             "157",
             0
@@ -310,7 +329,7 @@
       },
       "157": {
         "inputs": {
-          "vae": "wan_2.1_vae.safetensors",
+          "model_name": "wan_2.1_vae.safetensors",
           "precision": "bf16"
         },
         "class_type": "WanVideoVAELoader",
@@ -325,6 +344,10 @@
           "tile_sample_min_width": 272,
           "tile_overlap_factor_height": 144,
           "tile_overlap_factor_width": 128,
+          "tile_x": 2,
+          "tile_y": 2,
+          "tile_stride_x": 1,
+          "tile_stride_y": 1,
           "tiling_mode": "default",
           "vae": [
             "157",

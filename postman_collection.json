@@ -54,7 +54,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"input\": {\n    \"start_image_base64\": \"{{START_IMAGE_B64}}\",\n    \"end_image_base64\": \"{{END_IMAGE_B64}}\",\n    \"positive_prompt\": \"smooth motion, high quality, detailed, cinematic, natural movement\",\n    \"negative_prompt\": \"low quality, lowres, bad hands, extra limbs, missing fingers, poorly drawn face, bad anatomy, blurred, jpeg artifacts, deformed, ugly, bad proportions, disfigured, watermark, text, logo, signature\",\n    \"steps\": 8,\n    \"resolution\": 720,\n    \"frame_length\": 65,\n    \"seed\": 0\n  }\n}"
+          "raw": "{\n  \"input\": {\n    \"start_image_base64\": \"{{START_IMAGE_B64}}\",\n    \"end_image_base64\": \"{{END_IMAGE_B64}}\",\n    \"positive_prompt\": \"smooth motion, high quality, detailed, cinematic\",\n    \"negative_prompt\": \"low quality, blurry, distorted\",\n    \"steps\": 8,\n    \"resolution\": 640,\n    \"frame_length\": 65,\n    \"seed\": 0\n  }\n}"
         },
         "url": {
           "raw": "https://api.runpod.ai/v2/{{ENDPOINT_ID}}/runsync",
@@ -84,7 +84,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"input\": {\n    \"start_image_base64\": \"{{START_IMAGE_B64}}\",\n    \"end_image_base64\": \"{{END_IMAGE_B64}}\",\n    \"positive_prompt\": \"smooth motion, high quality, detailed, cinematic, natural movement\",\n    \"negative_prompt\": \"low quality, lowres, bad hands, extra limbs, missing fingers, poorly drawn face, bad anatomy, blurred, jpeg artifacts, deformed, ugly, bad proportions, disfigured, watermark, text, logo, signature\",\n    \"steps\": 8,\n    \"resolution\": 720,\n    \"frame_length\": 65,\n    \"seed\": 0\n  }\n}"
+          "raw": "{\n  \"input\": {\n    \"start_image_base64\": \"{{START_IMAGE_B64}}\",\n    \"end_image_base64\": \"{{END_IMAGE_B64}}\",\n    \"positive_prompt\": \"smooth motion, high quality, detailed, cinematic\",\n    \"negative_prompt\": \"low quality, blurry, distorted\",\n    \"steps\": 8,\n    \"resolution\": 640,\n    \"frame_length\": 65,\n    \"seed\": 0\n  }\n}"
         },
         "url": {
           "raw": "https://api.runpod.ai/v2/{{ENDPOINT_ID}}/run",

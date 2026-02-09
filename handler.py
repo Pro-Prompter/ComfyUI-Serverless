@@ -124,11 +124,11 @@ def handler(job):
         steps = 8
     steps = max(4, min(20, steps))
 
-    # Optional: Resolution (default 720)
+    # Optional: Resolution (default 640)
     try:
-        resolution = int(normalized_input.get("resolution", 720))
+        resolution = int(normalized_input.get("resolution", 640))
     except (ValueError, TypeError):
-        resolution = 720
+        resolution = 640
     resolution = max(480, min(1080, resolution))
 
     # Optional: Frame length (default 65, range 17-129)
@@ -217,9 +217,23 @@ def handler(job):
     else:
         return {"error": "Node 147 (Resolution) not found in workflow"}
 
-    # Node 156: WanVideoImageToVideoEncode (frame length)
+    # Node 156: WanVideoImageToVideoEncode (dimensions and frame length)
     if "156" in workflow:
+        # Calculate width/height based on resolution (using 16:9 aspect ratio)
+        # Resolution maps to height, calculate width accordingly
+        if resolution <= 480:
+            width, height = 854, 480
+        elif resolution <= 640:
+            width, height = 1138, 640
+        elif resolution <= 720:
+            width, height = 1280, 720
+        else:  # 1080
+            width, height = 1920, 1080
+
+        workflow["156"]["inputs"]["width"] = width
+        workflow["156"]["inputs"]["height"] = height
         workflow["156"]["inputs"]["length"] = frame_length
+        workflow["156"]["inputs"]["num_frames"] = frame_length
     else:
         return {"error": "Node 156 (WanVideoImageToVideoEncode) not found in workflow"}
 
