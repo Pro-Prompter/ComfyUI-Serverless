@@ -238,6 +238,7 @@ def handler(job):
 
     workflow["156"]["inputs"]["width"] = width
     workflow["156"]["inputs"]["height"] = height
+    workflow["156"]["inputs"]["num_frames"] = frame_length
     workflow["156"]["inputs"]["length"] = frame_length
 
     # Node 139: WanVideoSampler HIGH (seed, end_step)
