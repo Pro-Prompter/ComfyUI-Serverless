@@ -239,19 +239,18 @@ def handler(job):
     workflow["156"]["inputs"]["width"] = width
     workflow["156"]["inputs"]["height"] = height
     workflow["156"]["inputs"]["length"] = frame_length
-    workflow["156"]["inputs"]["num_frames"] = frame_length
 
-    # Node 139: WanVideoSampler HIGH (steps, seed, end_step)
+    # Node 139: WanVideoSampler HIGH (seed, end_step)
+    # Note: steps is connected via node 150, not set directly
     if "139" not in workflow:
         return {"error": "Node 139 (WanVideoSampler HIGH) not found in workflow"}
-    workflow["139"]["inputs"]["steps"] = steps
     workflow["139"]["inputs"]["seed"] = seed
     workflow["139"]["inputs"]["end_step"] = split_step
 
-    # Node 140: WanVideoSampler LOW (steps, seed, start_step)
+    # Node 140: WanVideoSampler LOW (seed, start_step)
+    # Note: steps is connected via node 150, not set directly
     if "140" not in workflow:
         return {"error": "Node 140 (WanVideoSampler LOW) not found in workflow"}
-    workflow["140"]["inputs"]["steps"] = steps
     workflow["140"]["inputs"]["seed"] = seed
     workflow["140"]["inputs"]["start_step"] = split_step
 
