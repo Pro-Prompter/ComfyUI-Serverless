@@ -1,412 +1,264 @@
 {
-  "input": {
-    "workflow": {
-      "127": {
-        "inputs": {
-          "backend": "inductor",
-          "fullgraph": false,
-          "mode": "default",
-          "dynamic": false,
-          "dynamo_cache_size_limit": 64,
-          "compile_transformer_blocks_only": true,
-          "compile_single_blocks": true,
-          "compile_double_blocks_limit": 128,
-          "compile_extras": false,
-          "compile_vae": false
-        },
-        "class_type": "WanVideoTorchCompileSettings",
-        "_meta": {
-          "title": "WanVideoTorchCompileSettings"
-        }
-      },
-      "128": {
-        "inputs": {
-          "blocks_to_swap": 20,
-          "offload_txt_in": false,
-          "offload_txt_emb": false,
-          "offload_img_in": false,
-          "offload_img_emb": false,
-          "offload_extra_blocks": 0,
-          "offload_double_blocks": 0,
-          "offload_single_blocks": false
-        },
-        "class_type": "WanVideoBlockSwap",
-        "_meta": {
-          "title": "WanVideoBlockSwap"
-        }
-      },
-      "129": {
-        "inputs": {
-          "lora": "Wan2.2-Lightning_I2V-A14B-4steps-lora_LOW_fp16.safetensors",
-          "strength": 1,
-          "fuse_lora": false,
-          "use_lora_cache": false
-        },
-        "class_type": "WanVideoLoraSelect",
-        "_meta": {
-          "title": "WanVideoLoraSelect LOW"
-        }
-      },
-      "130": {
-        "inputs": {
-          "lora": "Wan2.2-Lightning_I2V-A14B-4steps-lora_HIGH_fp16.safetensors",
-          "strength": 1,
-          "fuse_lora": false,
-          "use_lora_cache": false
-        },
-        "class_type": "WanVideoLoraSelect",
-        "_meta": {
-          "title": "WanVideoLoraSelect HIGH"
-        }
-      },
-      "131": {
-        "inputs": {
-          "model": "Wan2.2_Remix_NSFW_i2v_14b_high_lighting_v2.0.safetensors",
-          "precision": "fp16_fast",
-          "base_precision": "fp16",
-          "load_device": "gpu",
-          "quantization": "disabled",
-          "compile_model": "disabled",
-          "attention_mode": "sageattn",
-          "attention_implementation": "sageattn",
-          "save_load_dtype": "default",
-          "compile_args": [
-            "127",
-            0
-          ],
-          "block_swap_args": [
-            "128",
-            0
-          ],
-          "lora": [
-            "130",
-            0
-          ]
-        },
-        "class_type": "WanVideoModelLoader",
-        "_meta": {
-          "title": "Load Model HIGH"
-        }
-      },
-      "132": {
-        "inputs": {
-          "model": "Wan2.2_Remix_NSFW_i2v_14b_low_lighting_v2.0.safetensors",
-          "precision": "fp16_fast",
-          "base_precision": "fp16",
-          "load_device": "gpu",
-          "quantization": "disabled",
-          "compile_model": "disabled",
-          "attention_mode": "sageattn",
-          "attention_implementation": "sageattn",
-          "save_load_dtype": "default",
-          "compile_args": [
-            "127",
-            0
-          ],
-          "block_swap_args": [
-            "128",
-            0
-          ],
-          "lora": [
-            "129",
-            0
-          ]
-        },
-        "class_type": "WanVideoModelLoader",
-        "_meta": {
-          "title": "Load Model LOW"
-        }
-      },
-      "133": {
-        "inputs": {
-          "clip_name": "nsfw_wan_umt5-xxl_fp8_scaled.safetensors",
-          "type": "wan",
-          "device": "default"
-        },
-        "class_type": "CLIPLoader",
-        "_meta": {
-          "title": "Load CLIP"
-        }
-      },
-      "134": {
-        "inputs": {
-          "text": "",
-          "clip": [
-            "133",
-            0
-          ]
-        },
-        "class_type": "CLIPTextEncode",
-        "_meta": {
-          "title": "Positive Prompt"
-        }
-      },
-      "137": {
-        "inputs": {
-          "text": "low quality, lowres, bad hands, extra limbs, missing fingers, poorly drawn face, bad anatomy, blurred, jpeg artifacts, deformed, ugly, bad proportions, disfigured, watermark, text, logo, signature, unrealistic eyes, cross-eyed, lopsided, bad lighting, harsh shadows, flat shading, unshapely body, pixelated, duplicate limbs, bad perspective, morphed, distorted, glitch, malformed hands, distorted fingers, noisy background, overly saturated, unnatural colors, lens distortion, grainy, low detail,",
-          "clip": [
-            "133",
-            0
-          ]
-        },
-        "class_type": "CLIPTextEncode",
-        "_meta": {
-          "title": "Negative Prompt"
-        }
-      },
-      "138": {
-        "inputs": {
-          "positive": [
-            "134",
-            0
-          ],
-          "negative": [
-            "137",
-            0
-          ]
-        },
-        "class_type": "WanVideoTextEmbedBridge",
-        "_meta": {
-          "title": "WanVideoTextEmbedBridge"
-        }
-      },
-      "139": {
-        "inputs": {
-          "steps": 8,
-          "cfg": 1,
-          "seed": 0,
-          "seed_mode": "randomize",
-          "add_latent_noise": true,
-          "sampler": "euler",
-          "scheduler": "simple",
-          "start_step": 0,
-          "end_step": 4,
-          "skip_uncond": false,
-          "wrapper": "comfy",
-          "shift": 0,
-          "max_shift": 2,
-          "reverse_ode": true,
-          "force_offload": false,
-          "riflex_freq_index": 0,
-          "model": [
-            "131",
-            0
-          ],
-          "image_embeds": [
-            "156",
-            0
-          ],
-          "text_embeds": [
-            "138",
-            0
-          ]
-        },
-        "class_type": "WanVideoSampler",
-        "_meta": {
-          "title": "WanVideoSampler HIGH"
-        }
-      },
-      "140": {
-        "inputs": {
-          "steps": 8,
-          "cfg": 1,
-          "seed": 0,
-          "seed_mode": "fixed",
-          "add_latent_noise": true,
-          "sampler": "euler",
-          "scheduler": "simple",
-          "start_step": 4,
-          "end_step": 10000,
-          "skip_uncond": false,
-          "wrapper": "comfy",
-          "shift": 2,
-          "max_shift": 10000,
-          "reverse_ode": false,
-          "force_offload": false,
-          "riflex_freq_index": 0,
-          "model": [
-            "132",
-            0
-          ],
-          "image_embeds": [
-            "156",
-            0
-          ],
-          "text_embeds": [
-            "138",
-            0
-          ],
-          "samples": [
-            "139",
-            0
-          ]
-        },
-        "class_type": "WanVideoSampler",
-        "_meta": {
-          "title": "WanVideoSampler LOW"
-        }
-      },
-      "147": {
-        "inputs": {
-          "value": 720
-        },
-        "class_type": "easy int",
-        "_meta": {
-          "title": "Set Resolution"
-        }
-      },
-      "148": {
-        "inputs": {
-          "image": "start.png",
-          "upload": "image"
-        },
-        "class_type": "LoadImage",
-        "_meta": {
-          "title": "Start Image"
-        }
-      },
-      "149": {
-        "inputs": {
-          "image": "end.png",
-          "upload": "image"
-        },
-        "class_type": "LoadImage",
-        "_meta": {
-          "title": "End Image"
-        }
-      },
-      "150": {
-        "inputs": {
-          "value": 8
-        },
-        "class_type": "INTConstant",
-        "_meta": {
-          "title": "Steps"
-        }
-      },
-      "151": {
-        "inputs": {
-          "value": 4
-        },
-        "class_type": "INTConstant",
-        "_meta": {
-          "title": "Split Step"
-        }
-      },
-      "156": {
-        "inputs": {
-          "width": 832,
-          "height": 480,
-          "num_frames": 65,
-          "length": 65,
-          "start_weight": 0,
-          "end_weight": 1,
-          "start_latent_strength": 1.0,
-          "end_latent_strength": 1.0,
-          "noise_aug_strength": 0.0,
-          "guidance_scale": 1,
-          "resize": true,
-          "invert_start": false,
-          "invert_end": false,
-          "force_offload": false,
-          "vae": [
-            "157",
-            0
-          ],
-          "start_image": [
-            "148",
-            0
-          ],
-          "end_image": [
-            "149",
-            0
-          ]
-        },
-        "class_type": "WanVideoImageToVideoEncode",
-        "_meta": {
-          "title": "WanVideoImageToVideoEncode"
-        }
-      },
-      "157": {
-        "inputs": {
-          "model_name": "wan_2.1_vae.safetensors",
-          "precision": "bf16"
-        },
-        "class_type": "WanVideoVAELoader",
-        "_meta": {
-          "title": "Load VAE"
-        }
-      },
-      "158": {
-        "inputs": {
-          "enable_tiling": false,
-          "tile_sample_min_height": 272,
-          "tile_sample_min_width": 272,
-          "tile_overlap_factor_height": 144,
-          "tile_overlap_factor_width": 128,
-          "tile_x": 2,
-          "tile_y": 2,
-          "tile_stride_x": 1,
-          "tile_stride_y": 1,
-          "tiling_mode": "default",
-          "vae": [
-            "157",
-            0
-          ],
-          "samples": [
-            "140",
-            0
-          ]
-        },
-        "class_type": "WanVideoDecode",
-        "_meta": {
-          "title": "WanVideoDecode"
-        }
-      },
-      "115": {
-        "inputs": {
-          "ckpt_name": "rife47.pth",
-          "clear_cache_after_n_frames": 50,
-          "multiplier": 2,
-          "fast_mode": true,
-          "ensemble": true,
-          "scale_factor": 1,
-          "frames": [
-            "158",
-            0
-          ]
-        },
-        "class_type": "RIFE VFI",
-        "_meta": {
-          "title": "RIFE VFI"
-        }
-      },
-      "116": {
-        "inputs": {
-          "fps": 32,
-          "images": [
-            "115",
-            0
-          ]
-        },
-        "class_type": "CreateVideo",
-        "_meta": {
-          "title": "CreateVideo"
-        }
-      },
-      "117": {
-        "inputs": {
-          "filename_prefix": "interpolated_frames",
-          "images": [
-            "115",
-            0
-          ]
-        },
-        "class_type": "SaveImage",
-        "_meta": {
-          "title": "Save Interpolated Frames"
-        }
-      }
-    }
+  "127": {
+    "inputs": {
+      "backend": "inductor",
+      "fullgraph": false,
+      "mode": "default",
+      "dynamic": false,
+      "dynamo_cache_size_limit": 64,
+      "compile_transformer_blocks_only": true,
+      "compile_single_blocks": true,
+      "compile_double_blocks_limit": 128,
+      "compile_extras": false,
+      "compile_vae": false
+    },
+    "class_type": "WanVideoTorchCompileSettings"
+  },
+  "128": {
+    "inputs": {
+      "blocks_to_swap": 20,
+      "offload_txt_in": false,
+      "offload_txt_emb": false,
+      "offload_img_in": false,
+      "offload_img_emb": false,
+      "offload_extra_blocks": 0,
+      "offload_double_blocks": 0,
+      "offload_single_blocks": false
+    },
+    "class_type": "WanVideoBlockSwap"
+  },
+  "129": {
+    "inputs": {
+      "lora": "Wan2.2-Lightning_I2V-A14B-4steps-lora_LOW_fp16.safetensors",
+      "strength": 1,
+      "fuse_lora": false,
+      "use_lora_cache": false
+    },
+    "class_type": "WanVideoLoraSelect"
+  },
+  "130": {
+    "inputs": {
+      "lora": "Wan2.2-Lightning_I2V-A14B-4steps-lora_HIGH_fp16.safetensors",
+      "strength": 1,
+      "fuse_lora": false,
+      "use_lora_cache": false
+    },
+    "class_type": "WanVideoLoraSelect"
+  },
+  "131": {
+    "inputs": {
+      "model": "Wan2.2_Remix_NSFW_i2v_14b_high_lighting_v2.0.safetensors",
+      "precision": "fp16_fast",
+      "base_precision": "fp16",
+      "load_device": "gpu",
+      "quantization": "disabled",
+      "compile_model": "disabled",
+      "attention_mode": "sageattn",
+      "attention_implementation": "sageattn",
+      "save_load_dtype": "default",
+      "compile_args": ["127", 0],
+      "block_swap_args": ["128", 0],
+      "lora": ["130", 0]
+    },
+    "class_type": "WanVideoModelLoader"
+  },
+  "132": {
+    "inputs": {
+      "model": "Wan2.2_Remix_NSFW_i2v_14b_low_lighting_v2.0.safetensors",
+      "precision": "fp16_fast",
+      "base_precision": "fp16",
+      "load_device": "gpu",
+      "quantization": "disabled",
+      "compile_model": "disabled",
+      "attention_mode": "sageattn",
+      "attention_implementation": "sageattn",
+      "save_load_dtype": "default",
+      "compile_args": ["127", 0],
+      "block_swap_args": ["128", 0],
+      "lora": ["129", 0]
+    },
+    "class_type": "WanVideoModelLoader"
+  },
+  "133": {
+    "inputs": {
+      "clip_name": "nsfw_wan_umt5-xxl_fp8_scaled.safetensors",
+      "type": "wan",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader"
+  },
+  "134": {
+    "inputs": {
+      "text": "",
+      "clip": ["133", 0]
+    },
+    "class_type": "CLIPTextEncode"
+  },
+  "137": {
+    "inputs": {
+      "text": "low quality, lowres, bad hands, extra limbs, missing fingers, poorly drawn face, bad anatomy, blurred, jpeg artifacts, deformed, ugly, bad proportions, disfigured, watermark, text, logo, signature, unrealistic eyes, cross-eyed, lopsided, bad lighting, harsh shadows, flat shading, unshapely body, pixelated, duplicate limbs, bad perspective, morphed, distorted, glitch, malformed hands, distorted fingers, noisy background, overly saturated, unnatural colors, lens distortion, grainy, low detail,",
+      "clip": ["133", 0]
+    },
+    "class_type": "CLIPTextEncode"
+  },
+  "138": {
+    "inputs": {
+      "positive": ["134", 0],
+      "negative": ["137", 0]
+    },
+    "class_type": "WanVideoTextEmbedBridge"
+  },
+  "139": {
+    "inputs": {
+      "steps": 8,
+      "cfg": 1,
+      "seed": 0,
+      "seed_mode": "randomize",
+      "add_latent_noise": true,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "start_step": 0,
+      "end_step": 4,
+      "skip_uncond": false,
+      "wrapper": "comfy",
+      "shift": 0,
+      "max_shift": 2,
+      "reverse_ode": true,
+      "force_offload": false,
+      "riflex_freq_index": 0,
+      "model": ["131", 0],
+      "image_embeds": ["156", 0],
+      "text_embeds": ["138", 0]
+    },
+    "class_type": "WanVideoSampler"
+  },
+  "140": {
+    "inputs": {
+      "steps": 8,
+      "cfg": 1,
+      "seed": 0,
+      "seed_mode": "fixed",
+      "add_latent_noise": true,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "start_step": 4,
+      "end_step": 10000,
+      "skip_uncond": false,
+      "wrapper": "comfy",
+      "shift": 2,
+      "max_shift": 10000,
+      "reverse_ode": false,
+      "force_offload": false,
+      "riflex_freq_index": 0,
+      "model": ["132", 0],
+      "image_embeds": ["156", 0],
+      "text_embeds": ["138", 0],
+      "samples": ["139", 0]
+    },
+    "class_type": "WanVideoSampler"
+  },
+  "147": {
+    "inputs": {
+      "value": 720
+    },
+    "class_type": "easy int"
+  },
+  "148": {
+    "inputs": {
+      "image": "start.png",
+      "upload": "image"
+    },
+    "class_type": "LoadImage"
+  },
+  "149": {
+    "inputs": {
+      "image": "end.png",
+      "upload": "image"
+    },
+    "class_type": "LoadImage"
+  },
+  "150": {
+    "inputs": {
+      "value": 8
+    },
+    "class_type": "INTConstant"
+  },
+  "151": {
+    "inputs": {
+      "value": 4
+    },
+    "class_type": "INTConstant"
+  },
+  "156": {
+    "inputs": {
+      "width": 832,
+      "height": 480,
+      "num_frames": 65,
+      "length": 65,
+      "start_weight": 0,
+      "end_weight": 1,
+      "start_latent_strength": 1.0,
+      "end_latent_strength": 1.0,
+      "noise_aug_strength": 0.0,
+      "guidance_scale": 1,
+      "resize": true,
+      "invert_start": false,
+      "invert_end": false,
+      "force_offload": false,
+      "vae": ["157", 0],
+      "start_image": ["148", 0],
+      "end_image": ["149", 0]
+    },
+    "class_type": "WanVideoImageToVideoEncode"
+  },
+  "157": {
+    "inputs": {
+      "model_name": "wan_2.1_vae.safetensors",
+      "precision": "bf16"
+    },
+    "class_type": "WanVideoVAELoader"
+  },
+  "158": {
+    "inputs": {
+      "enable_tiling": false,
+      "tile_sample_min_height": 272,
+      "tile_sample_min_width": 272,
+      "tile_overlap_factor_height": 144,
+      "tile_overlap_factor_width": 128,
+      "tile_x": 2,
+      "tile_y": 2,
+      "tile_stride_x": 1,
+      "tile_stride_y": 1,
+      "tiling_mode": "default",
+      "vae": ["157", 0],
+      "samples": ["140", 0]
+    },
+    "class_type": "WanVideoDecode"
+  },
+  "115": {
+    "inputs": {
+      "ckpt_name": "rife47.pth",
+      "clear_cache_after_n_frames": 50,
+      "multiplier": 2,
+      "fast_mode": true,
+      "ensemble": true,
+      "scale_factor": 1,
+      "frames": ["158", 0]
+    },
+    "class_type": "RIFE VFI"
+  },
+  "116": {
+    "inputs": {
+      "fps": 32,
+      "images": ["115", 0]
+    },
+    "class_type": "CreateVideo"
+  },
+  "117": {
+    "inputs": {
+      "filename_prefix": "interpolated_frames",
+      "images": ["115", 0]
+    },
+    "class_type": "SaveImage"
   }
 }

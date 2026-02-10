@@ -84,7 +84,17 @@ def queue_workflow(workflow, client_id):
     data = json.dumps(payload).encode("utf-8")
     headers = {"Content-Type": "application/json"}
     response = requests.post(f"http://{COMFY_HOST}/prompt", data=data, headers=headers, timeout=30)
-    response.raise_for_status()
+
+    # If error, capture the response body for debugging
+    if response.status_code != 200:
+        try:
+            error_detail = response.json()
+            print(f"ComfyUI rejected workflow: {error_detail}")
+            raise Exception(f"ComfyUI validation failed: {error_detail}")
+        except:
+            print(f"ComfyUI returned {response.status_code}: {response.text}")
+            response.raise_for_status()
+
     return response.json()
 
 def generate_random_filename(extension=".png"):
@@ -166,92 +176,84 @@ def handler(job):
     # 5. Load Workflow
     try:
         with open(WORKFLOW_FILE, 'r') as f:
-            workflow_data = json.load(f)
-        # Extract workflow from input.workflow structure (matches wan_api_postman.json format)
-        workflow = workflow_data.get("input", {}).get("workflow", workflow_data)
+            workflow = json.load(f)
     except Exception as e:
         return {"error": f"Failed to load workflow file: {e}"}
 
-    # 6. Modify Workflow Nodes
+    # 6. Modify Workflow Nodes (with validation)
+
+    # Validate workflow structure
+    if not isinstance(workflow, dict):
+        return {"error": "Invalid workflow structure - must be a dictionary"}
 
     # Node 148: Start Image
-    if "148" in workflow:
-        workflow["148"]["inputs"]["image"] = start_filename
-    else:
+    if "148" not in workflow:
         return {"error": "Node 148 (Start Image) not found in workflow"}
+    workflow["148"]["inputs"]["image"] = start_filename
 
     # Node 149: End Image
-    if "149" in workflow:
-        workflow["149"]["inputs"]["image"] = end_filename
-    else:
+    if "149" not in workflow:
         return {"error": "Node 149 (End Image) not found in workflow"}
+    workflow["149"]["inputs"]["image"] = end_filename
 
     # Node 134: Positive Prompt
-    if "134" in workflow:
-        workflow["134"]["inputs"]["text"] = positive_prompt
-    else:
+    if "134" not in workflow:
         return {"error": "Node 134 (Positive Prompt) not found in workflow"}
+    workflow["134"]["inputs"]["text"] = positive_prompt
 
     # Node 137: Negative Prompt
-    if "137" in workflow:
-        workflow["137"]["inputs"]["text"] = negative_prompt
-    else:
+    if "137" not in workflow:
         return {"error": "Node 137 (Negative Prompt) not found in workflow"}
+    workflow["137"]["inputs"]["text"] = negative_prompt
 
     # Node 150: Steps
-    if "150" in workflow:
-        workflow["150"]["inputs"]["value"] = steps
-    else:
+    if "150" not in workflow:
         return {"error": "Node 150 (Steps) not found in workflow"}
+    workflow["150"]["inputs"]["value"] = steps
 
     # Node 151: Split Step (half of total steps)
     split_step = steps // 2
-    if "151" in workflow:
-        workflow["151"]["inputs"]["value"] = split_step
-    else:
+    if "151" not in workflow:
         return {"error": "Node 151 (Split Step) not found in workflow"}
+    workflow["151"]["inputs"]["value"] = split_step
 
     # Node 147: Resolution
-    if "147" in workflow:
-        workflow["147"]["inputs"]["value"] = resolution
-    else:
+    if "147" not in workflow:
         return {"error": "Node 147 (Resolution) not found in workflow"}
+    workflow["147"]["inputs"]["value"] = resolution
 
     # Node 156: WanVideoImageToVideoEncode (dimensions and frame length)
-    if "156" in workflow:
-        # Calculate width/height based on resolution (using 16:9 aspect ratio)
-        # Resolution maps to height, calculate width accordingly
-        if resolution <= 480:
-            width, height = 854, 480
-        elif resolution <= 640:
-            width, height = 1138, 640
-        elif resolution <= 720:
-            width, height = 1280, 720
-        else:  # 1080
-            width, height = 1920, 1080
-
-        workflow["156"]["inputs"]["width"] = width
-        workflow["156"]["inputs"]["height"] = height
-        workflow["156"]["inputs"]["length"] = frame_length
-        workflow["156"]["inputs"]["num_frames"] = frame_length
-    else:
+    if "156" not in workflow:
         return {"error": "Node 156 (WanVideoImageToVideoEncode) not found in workflow"}
 
+    # Calculate width/height based on resolution (using 16:9 aspect ratio)
+    if resolution <= 480:
+        width, height = 854, 480
+    elif resolution <= 640:
+        width, height = 1138, 640
+    elif resolution <= 720:
+        width, height = 1280, 720
+    else:  # 1080
+        width, height = 1920, 1080
+
+    workflow["156"]["inputs"]["width"] = width
+    workflow["156"]["inputs"]["height"] = height
+    workflow["156"]["inputs"]["length"] = frame_length
+    workflow["156"]["inputs"]["num_frames"] = frame_length
+
     # Node 139: WanVideoSampler HIGH (steps, seed, end_step)
-    if "139" in workflow:
-        workflow["139"]["inputs"]["steps"] = steps
-        workflow["139"]["inputs"]["seed"] = seed
-        workflow["139"]["inputs"]["end_step"] = split_step
-    else:
+    if "139" not in workflow:
         return {"error": "Node 139 (WanVideoSampler HIGH) not found in workflow"}
+    workflow["139"]["inputs"]["steps"] = steps
+    workflow["139"]["inputs"]["seed"] = seed
+    workflow["139"]["inputs"]["end_step"] = split_step
 
     # Node 140: WanVideoSampler LOW (steps, seed, start_step)
-    if "140" in workflow:
-        workflow["140"]["inputs"]["steps"] = steps
-        workflow["140"]["inputs"]["seed"] = seed
-        workflow["140"]["inputs"]["start_step"] = split_step
-    else:
+    if "140" not in workflow:
         return {"error": "Node 140 (WanVideoSampler LOW) not found in workflow"}
+    workflow["140"]["inputs"]["steps"] = steps
+    workflow["140"]["inputs"]["seed"] = seed
+    workflow["140"]["inputs"]["start_step"] = split_step
 
     # 7. Execute Workflow
     client_id = str(uuid.uuid4())
@@ -261,22 +263,40 @@ def handler(job):
         ws = websocket.WebSocket()
         ws.connect(ws_url, timeout=10)
 
+        # Debug: Log workflow structure (first 500 chars)
+        workflow_str = json.dumps(workflow)
+        print(f"Sending workflow to ComfyUI ({len(workflow_str)} chars): {workflow_str[:500]}...")
+
         queue_resp = queue_workflow(workflow, client_id)
         prompt_id = queue_resp["prompt_id"]
 
-        # Poll for completion
-        while True:
-            out = ws.recv()
-            if isinstance(out, str):
-                msg = json.loads(out)
-                if msg["type"] == "executing":
-                    data = msg["data"]
-                    if data["node"] is None and data["prompt_id"] == prompt_id:
-                        break  # Done
-            else:
-                continue
+        print(f"Workflow queued successfully. Prompt ID: {prompt_id}")
 
+        # Poll for completion with timeout
+        start_time = time.time()
+        timeout_seconds = 1200  # 20 minutes max
+
+        while True:
+            # Check timeout
+            if time.time() - start_time > timeout_seconds:
+                return {"error": f"Workflow execution timeout after {timeout_seconds}s"}
+
+            try:
+                out = ws.recv()
+                if isinstance(out, str):
+                    msg = json.loads(out)
+                    if msg["type"] == "executing":
+                        data = msg["data"]
+                        if data["node"] is None and data["prompt_id"] == prompt_id:
+                            print(f"Workflow execution completed for prompt {prompt_id}")
+                            break  # Done
+                    elif msg["type"] == "execution_error":
+                        return {"error": f"Workflow execution error: {msg.get('data', {})}"}
+            except Exception as e:
+                print(f"WebSocket receive error: {e}")
+                continue
         # 8. Fetch Results - Extract all interpolated frames
+        print(f"Fetching results for prompt {prompt_id}...")
         history = get_history(prompt_id)
         prompt_history = history.get(prompt_id, {})
         outputs = prompt_history.get("outputs", {})
@@ -284,20 +304,24 @@ def handler(job):
         # Extract frames from SaveImage node 117
         frames = []
         node_output = outputs.get("117", {})
-        
+
         if "images" in node_output:
-            for item in node_output["images"]:
+            print(f"Found {len(node_output['images'])} frames to process")
+            for idx, item in enumerate(node_output["images"]):
                 fname = item.get("filename", "")
                 ftype = item.get("type", "output")
                 subfolder = item.get("subfolder", "")
-                
+
                 content = get_image_data(fname, subfolder, ftype)
                 if content:
                     frames.append(base64.b64encode(content).decode("utf-8"))
+                else:
+                    print(f"Warning: Failed to fetch frame {idx+1}/{len(node_output['images'])}: {fname}")
 
         if not frames:
-            return {"error": "No interpolated frames generated", "details": str(outputs)}
+            return {"error": "No interpolated frames generated", "details": str(outputs), "node_outputs": list(outputs.keys())}
 
+        print(f"Successfully generated {len(frames)} frames")
         return {
             "frames": frames,
             "metadata": {
