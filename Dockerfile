@@ -6,8 +6,8 @@ ENV HF_TOKEN="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"
 # Create model folders
 RUN mkdir -p /root/.config/ComfyUI/models/{diffusion_models,text_encoders,loras,vae,frame_interpolation}
 
-# Install custom nodes
-RUN comfy node install --exit-on-fail ComfyUI-WanVideoWrapper@1.4.7 --mode remote \
+# Install custom nodes (using version 1.3.9 to match original working workflow)
+RUN comfy node install --exit-on-fail ComfyUI-WanVideoWrapper@1.3.9 --mode remote \
  && comfy node install --exit-on-fail comfyui-kjnodes@1.2.8 \
  && comfy node install --exit-on-fail comfyui-frame-interpolation@1.0.7 \
  && comfy node install --exit-on-fail comfyui-custom-scripts@1.2.5 \
